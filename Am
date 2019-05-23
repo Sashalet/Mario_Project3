@@ -1,0 +1,167 @@
+#include<SFML\Graphics.hpp>
+#include <SFML/Audio.hpp>
+#include <iostream>
+//#include <sstream>
+
+using namespace sf;
+
+
+float offsetX = 0, offsetY = 0;
+
+
+const int H = 17;
+const int W = 150;
+
+
+String TileMap[H] = {
+"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"0                                                                                                                                                   0",
+"0                                                                                    w                                                              0",
+"0                   w                                  w                   w            c                                                           0",
+"0                                      w                                                                                                            0",
+"0                                                                             k                                                                     0",
+"0                      c                                                      k    kkkkkkkkkkkk w                                                   0",
+"0                                                                       r     kkkkkk                                                                0",
+"0                                                                      rr                                                                           0",
+"0                                                                     rrr                          c                           c                    0",
+"0               c    kckck                                           rrrr                                        ckckc                              0",
+"0                                      t0                           rrrrr   t0                                                                      0",
+"0G                                     00              t0          rrrrrr   00       G                      t0                  r r                 0",
+"0           d    g       d             00              00         rrrrrrr   00                              00                 r r r                0",
+"PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP",
+"PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP",
+"PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP",
+};
+
+
+class Main
+{
+public:
+	float dx, dy;
+	FloatRect rect;
+	Sprite sprite;
+	float currentFrame;
+	
+};
+
+class PLAYER : public Main
+{
+public:
+
+	bool onGround;
+
+public:
+
+	PLAYER(Texture& image)
+	{
+		sprite.setTexture(image);
+		rect = FloatRect(100, 180, 16, 16);
+
+		dx = dy = 0.1;
+		currentFrame = 0;
+	}
+
+	void update(float time)
+	{
+
+		rect.left += dx * time;
+		Collision(0);
+
+
+		if (!onGround) dy = dy + 0.0005 * time;
+		rect.top += dy * time;
+		onGround = false;
+		Collision(1);
+
+
+		currentFrame += time * 0.005;
+		if (currentFrame > 3) currentFrame -= 3;
+
+
+		if (dx > 0) sprite.setTextureRect(IntRect(112 + 31 * int(currentFrame), 144, 16, 16));
+		if (dx < 0) sprite.setTextureRect(IntRect(112 + 31 * int(currentFrame) + 16, 144, -16, 16));
+
+
+		sprite.setPosition(rect.left - offsetX, rect.top - offsetY);
+
+		dx = 0;
+	}
+
+
+	void Collision(int num)
+	{
+
+		for (int i = rect.top / 16; i < (rect.top + rect.height) / 16; i++)
+			for (int j = rect.left / 16; j < (rect.left + rect.width) / 16; j++)
+			{
+				if ((TileMap[i][j] == 'P') || (TileMap[i][j] == 'k') || (TileMap[i][j] == '0') || (TileMap[i][j] == 'r') || (TileMap[i][j] == 't'))
+				{
+					if (dy > 0 && num == 1)
+					{
+						rect.top = i * 16 - rect.height;  dy = 0;   onGround = true;
+					}
+					if (dy < 0 && num == 1)
+					{
+						rect.top = i * 16 + 16;   dy = 0;
+					}
+					if (dx > 0 && num == 0)
+					{
+						rect.left = j * 16 - rect.width;
+					}
+					if (dx < 0 && num == 0)
+					{
+						rect.left = j * 16 + 16;
+					}
+				}
+
+				if (TileMap[i][j] == 'c') {
+					 TileMap[i][j]=' '; 
+				}
+			}
+
+	}
+
+};
+
+
+
+class ENEMY : public Main
+{
+
+public:
+
+	bool life;
+
+public:
+
+	void set(Texture& image, int x, int y)
+	{
+		sprite.setTexture(image);
+		rect = FloatRect(x, y, 16, 16);
+
+		dx = 0.05;
+		currentFrame = 0;
+		life = true;
+	}
+
+	void update(float time)
+	{
+		rect.left += dx * time;
+
+		Collision();
+
+
+		currentFrame += time * 0.005;
+		if (currentFrame > 2) currentFrame -= 2;
+
+		sprite.setTextureRect(IntRect(18 * int(currentFrame), 0, 16, 16));
+		if (!life) sprite.setTextureRect(IntRect(58, 0, 16, 16));
+
+		
+		sprite.setPosition(rect.left - offsetX, rect.top - offsetY);
+
+	}
+
+
+	void Collision()
+	{
